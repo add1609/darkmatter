@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Procedural Generation of Spiral Galaxies</title>
+  <style>
+	fieldset {
+		border: 1px; 
+		border-radius:20px; 
+		margin: 15px;
+		background-color: #11112288;
+	}
+
+	h3 {
+		margin-top:5px;
+		margin-bottom:5px;
+		font-family: sans-serif;  
+		color: #EEEEEE;
+	}
+
+	h1 {
+		font-family: sans-serif;  
+		color: #EEEEEE;
+		font-style: normal;
+		font-size: 20pt;
+		font-weight: 100; 
+	}
+
+	body {
+		background-color:#00001a; 
+		background-image: url("images/deepfield.jpg");  
+		color: #BBBBCC;
+		font-family: sans-serif;  
+		font-size: 12pt;
+		font-weight: 100; 
+	}
+	  
+	.row {
+		display: flex;
+	}
+
+	.column {
+		flex: 50%;
+	}
+
+	.column-70 {
+		flex: 60%;
+	}
+	
+	.column-30 {
+		flex: 30%;
+		min-width: 380px;
+	}
+
+	a {
+		color: #BBBBCC;
+	}
+
+	div.slider {
+		margin-top: 10px;
+	}
+
+	div.checkbox {
+		margin-top: 10px;
+	}
+
+	input[type=range] {
+		width:240px;
+	}
+
+	.container {
+  		height: 95vh;
+  		position: relative;
+/*		border: 2px solid green;  */
+	}
+
+	.center {
+		margin: 0;
+  		position: absolute;
+  		top: 50%;
+  		left: 50%;
+/*  		-ms-transform: translate(-50%, -50%); */
+  		transform: translate(-50%, -50%);
+	}
+
+	progress {
+		width: 350px;
+  		height: 80px;
+		top: 335px; 
+		left: 200px;
+		position: absolute;
+	}
+  </style>
+</head>
+<body>
+	<div class="container" >
+		<div class="center" >
+			<div class="row" style="text-align: left;" >
+				<div class="column-30 controls">
+					<form>  
+						<fieldset > 
+							<h3>Galaxy presets</h3>
+							<select id="cbPreset" name="viewpoint" onChange="onSelectPreset()">
+								<option value="0" selected>Sample 0</option>
+								<option value="1" selected>Sample 1</option>
+								<option value="2" selected>Sample 2</option>
+								<option value="3" selected>Sample 3</option>
+							</select>
+						</fieldset>
+
+						<fieldset>  
+							<h3>Physics</h3>
+									<div class="checkbox">
+										<input type="checkbox" id="cbHasDarkMatter" onChange="onHasDarkMatter()"/>
+										<label for="cbHasDarkMatter">dark matter</label><br/>
+									</div>
+									<div class="checkbox">
+										<input type="checkbox" id="cbShowVelocity" onChange="onShowVelocity()"/>
+										<label for="cbShowVelocity">velocity curve</label><br/>
+									</div>
+
+								<div class="slider">
+									<label for="slTimeStep">Time step length in years</label><br/>
+									<input type="range" min="0" step="1000" max="300000" class="slider" id="slTimeStep">
+									<span id="labelTimeStep"></span>
+								</div>
+
+								<div class="slider">
+									<label for="slBaseTemp">Base Temperature  in K</label><br/>
+									<input type="range" min="1000" max="10000" step="10" class="slider" id="slBaseTemp">
+									<span id="labelBaseTemp"></span>
+								</div>
+						</fieldset>
+
+						<fieldset>  
+							<h3>Display</h3>
+							<div class="checkbox">
+								<input type="checkbox" id="cbShowDensityWaves" onChange="onShowDensityWaves()"/>
+								<label for="cbShowDensityWaves">density waves</label><br/>
+							</div>
+
+							<div class="checkbox">
+								<input type="checkbox" value="true" id="cbShowAxis" onChange="onShowAxis()"/> 
+								<label for="cbShowAxis">axis</label><br/>
+							</div>
+
+							<div class="checkbox">
+								<input type="checkbox" value="true" id="cbShowStars" onChange="onShowStars()"/> 
+								<label for="cbShowStars">stars</label><br/>
+							</div>
+			
+							<div class="checkbox">
+								<input type="checkbox" value="true" id="cbShowDust" onChange="onShowDust()"/> 
+								<label for="cbShowDust">dust</label><br/>
+							</div>
+
+							<div class="checkbox">
+								<input type="checkbox" value="true" id="cbShowDustFilaments" onChange="onShowDustFilaments()"/> 
+								<label for="cbShowDustFilaments">dust filaments</label><br/>
+							</div>
+
+							<div class="checkbox">
+								<input type="checkbox" value="true" id="cbShowH2" onChange="onShowH2()"/> 
+								<label for="cbShowH2">H2 regions</label><br/>
+							</div>
+
+							<div class="slider">
+								<label for="slFov">Field of view</label><br/>
+								<input type="range" min="5000" max="50000" class="slider" id="slFov">
+								<span id="labelFov"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slDustSize">Dust render size</label><br/>
+								<input type="range" min="150" max="200" class="slider" id="slDustSize">
+								<span id="labelDustRenderSize"></span>
+							</div>
+						</fieldset>
+
+					</form>
+				</div> <!-- class=column-30 -->
+
+				<div class="column-70">
+					<div style="position:relative;">
+						<canvas id="cvGalaxy" width="700" height="700"></canvas>
+<!--						<progress id="idProgress">Please Wait</progress> -->
+					</div>
+				</div> <!-- class=column-70 -->
+
+				<div class="column-30 controls">
+					<form>  
+						<fieldset>  
+							<h3>Density Waves</h3>
+							<div class="slider">
+								<label for="slCoreRad">Galaxy core radius in ly</label><br/>
+								<input type="range" min="0.05" max="0.95" step="0.01" class="slider" id="slCoreRad">
+								<span id="labelCoreRad"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slRad">Galaxy radius in ly</label><br/>
+								<input type="range" min="1000" max="20000" class="slider" id="slRad">
+								<span id="labelRad"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slAngOffset">Angular Offset in degree</label><br/>
+								<input type="range" min="0.0001" max="0.0008" step="0.00001" class="slider" id="slAngOffset">
+								<span id="labelAngularOffset"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slInnerEx">Inner Excentricity</label><br/>
+								<input type="range" min="0" max="2" step="0.01" class="slider" id="slInnerEx">
+								<span id="labelInnerEx"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slOutterEx">Outter Excentricity</label><br/>
+								<input type="range" min="0" max="2" step="0.01" class="slider" id="slOutterEx">
+								<span id="labelOutterEx"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slPertN">Number Ellipse Disturbances</label><br/>
+								<input type="range" min="0" max="4" step="1" class="slider" id="slPertN">
+								<span id="labelPertN"></span>
+							</div>
+
+							<div class="slider">
+								<label for="slPertAmp">Ellipse Disturbance Damping factor</label><br/>
+								<input type="range" min="2" max="100" step="1" class="slider" id="slPertAmp">
+								<span id="labelPertAmp"></span>
+							</div>
+
+						</fieldset>
+					</form>
+				</div> <!-- class=column-30 -->
+
+			</div> <!-- class=row -->
+
+		</div>
+	</div> <!-- id=main-->
+
+<script src="./galaxy-renderer-bundle.js"></script>
+<script>
+	try
+	{
+		const renderer = window.GalaxyRenderer.galaxy;
+		const uiController = window.GalaxyRenderer.uiController;
+
+		update(renderer);
+
+		function update(renderer) {
+			uiController.updateFromGalaxy()
+
+			// Display options
+			document.getElementById("cbShowDensityWaves").checked = renderer.showDensityWaves
+			document.getElementById("cbShowAxis").checked = renderer.showAxis
+			document.getElementById("cbShowStars").checked = renderer.showStars
+			document.getElementById("cbShowDust").checked = renderer.showDust
+			document.getElementById("cbShowDustFilaments").checked = renderer.showDustFilaments
+			document.getElementById("cbShowH2").checked = renderer.showH2
+
+			// Physics options
+			document.getElementById("cbShowVelocity").checked = renderer.showVelocity
+			document.getElementById("cbHasDarkMatter").checked = renderer.hasDarkMatter;
+
+			// Galaxy properties
+			uiController.initilializeSlider('slTimeStep', 'labelTimeStep', 'timeStep')
+			uiController.initilializeSlider('slFov', 'labelFov', 'fov')
+			uiController.initilializeSlider('slDustSize', 'labelDustRenderSize', 'dustRenderSize')
+
+			// Density Waves
+			uiController.initilializeEditModeSlider('slRad', 'labelRad', 'rad')
+			uiController.initilializeEditModeSlider('slCoreRad', 'labelCoreRad', 'coreRad')
+			uiController.initilializeEditModeSlider('slAngOffset', 'labelAngularOffset', 'angleOffset')
+			uiController.initilializeEditModeSlider('slInnerEx', 'labelInnerEx', 'exInner')
+			uiController.initilializeEditModeSlider('slOutterEx', 'labelOutterEx', 'exOuter')
+			uiController.initilializeEditModeSlider('slPertN', 'labelPertN', 'pertN')
+			uiController.initilializeEditModeSlider('slPertAmp', 'labelPertAmp', 'pertAmp')
+
+			uiController.initilializeEditModeSlider('slBaseTemp', 'labelBaseTemp', 'baseTemp')
+
+		}
+		
+		function onSelectPreset() {
+			renderer.selectPreset(parseInt(document.getElementById("cbPreset").value))
+			update(renderer)
+		}
+
+		function onShowDensityWaves() {
+			renderer.showDensityWaves = document.getElementById("cbShowDensityWaves").checked;
+		}
+		
+		function onShowAxis() {
+			renderer.showAxis = document.getElementById("cbShowAxis").checked;
+		}
+
+		function onShowStars() {
+			renderer.showStars = document.getElementById("cbShowStars").checked;
+		}
+
+		function onShowDust() {
+			renderer.showDust = document.getElementById("cbShowDust").checked;
+		}
+
+		function onShowDustFilaments() {
+			renderer.showDustFilaments = document.getElementById("cbShowDustFilaments").checked;
+		}
+
+		function onShowH2() {
+			renderer.showH2 = document.getElementById("cbShowH2").checked;
+		}
+
+		function onShowVelocity() {
+			renderer.showVelocity = document.getElementById("cbShowVelocity").checked;
+		}
+
+		function onHasDarkMatter() {
+			renderer.hasDarkMatter = document.getElementById("cbHasDarkMatter").checked;
+		}
+
+	}
+	catch(Error)
+	{
+		alert(Error.message);
+	}
+</script>
+
+</body>
+</html>
